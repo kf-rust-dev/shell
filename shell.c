@@ -8,7 +8,10 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+void init(void);
 void loop(void);
+void cleanup(void);
+
 char* read_line(char* prompt);
 char** parse_line(char* line);
 int execute_command(char** args);
@@ -17,6 +20,7 @@ int run_command(char** args);
 int builtin_cd(char** args);
 int builtin_help(char** args);
 int builtin_exit(char** args);
+int builtin_history(char** args);
 
 typedef struct {
     char* name;
@@ -26,7 +30,8 @@ typedef struct {
 builtin builtins[] = {
     {"cd", builtin_cd},
     {"help", builtin_help},
-    {"exit", builtin_exit}
+    {"exit", builtin_exit},
+    {"history", builtin_history}
 };
 
 int builtins_num() {
@@ -34,7 +39,13 @@ int builtins_num() {
 }
 
 int main(int argc, char** argv) {
+    init();
     loop();
+    cleanup();
+}
+
+void init(void) {
+    read_history(".shell_history");
 }
 
 void loop(void) {
@@ -50,6 +61,10 @@ void loop(void) {
             break;
         }
     }
+}
+
+void cleanup(void) {
+    write_history(".shell_history");
 }
 
 char* read_line(char* prompt) {
@@ -155,4 +170,14 @@ int builtin_help(char** args) {
 
 int builtin_exit(char** args) {
     return 0;
+}
+
+int builtin_history(char** args) {
+    HIST_ENTRY** history = history_list();
+    if (history) {
+        for (int i = 0; history[i]; i++) {
+            printf("%d %s\n", i + history_base, history[i]->line);
+        }
+    }
+    return 1;
 }
