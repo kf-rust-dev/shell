@@ -18,20 +18,19 @@ int builtin_cd(char** args);
 int builtin_help(char** args);
 int builtin_exit(char** args);
 
-char* builtin_str[] = {
-    "cd",
-    "help",
-    "exit"
-};
+typedef struct {
+    char* name;
+    int (*func)(char**);
+} builtin;
 
-int (*builtin_fn[])(char**) = {
-    builtin_cd,
-    builtin_help,
-    builtin_exit
+builtin builtins[] = {
+    {"cd", builtin_cd},
+    {"help", builtin_help},
+    {"exit", builtin_exit}
 };
 
 int builtins_num() {
-    return sizeof(builtin_str) / sizeof(char*);
+    return sizeof(builtins) / sizeof(builtin);
 }
 
 int main(int argc, char** argv) {
@@ -104,8 +103,8 @@ int execute_command(char** args) {
     }
 
     for (int i = 0; i < builtins_num(); i++) {
-        if (strcmp(args[0], builtin_str[i]) == 0) {
-            return builtin_fn[i](args);
+        if (strcmp(args[0], builtins[i].name) == 0) {
+            return builtins[i].func(args);
         }
     }
 
@@ -149,7 +148,7 @@ int builtin_cd(char** args) {
 int builtin_help(char** args) {
     printf("shell builtins:\n");
     for (int i = 0; i < builtins_num(); i++) {
-        printf("  %s\n", builtin_str[i]);
+        printf("  %s\n", builtins[i].name);
     }
     return 1;
 }
