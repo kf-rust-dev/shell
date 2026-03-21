@@ -3,11 +3,14 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 void loop(void);
 char* read_line(void);
 char** parse_line(char* line);
 int execute_command(char** args);
+int run_command(char** args);
 
 int builtin_cd(char** args);
 int builtin_help(char** args);
@@ -116,6 +119,41 @@ char** parse_line(char* line) {
 
     tokens[i] = NULL;
     return tokens;
+}
+
+int execute_command(char** args) {
+    if (!args[0]) {
+        return 1;
+    }
+
+    for (int i = 0; i < builtins_num(); i++) {
+        if (strcmp(args[0], builtin_str[i]) == 0) {
+            return builtin_fn[i](args);
+        }
+    }
+
+    return run_command(args);
+}
+
+int run_command(char** args) {
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("shell");
+        return 1;
+    }
+
+    if (pid == 0) {
+        if (execvp(args[0], args) == -1) {
+            perror("shell");
+            exit(1);
+        }
+    }
+
+    int status;
+    if (waitpid(pid, &status, 0) == -1) {
+        perror("shell");
+    }
+    return 1;
 }
 
 int builtin_cd(char** args) {
