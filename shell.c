@@ -5,9 +5,11 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 void loop(void);
-char* read_line(void);
+char* read_line(char* prompt);
 char** parse_line(char* line);
 int execute_command(char** args);
 int run_command(char** args);
@@ -38,10 +40,7 @@ int main(int argc, char** argv) {
 
 void loop(void) {
     while (true) {
-        printf("> ");
-        fflush(stdout);
-
-        char* line = read_line();
+        char* line = read_line("> ");
         char** args = parse_line(line);
         int status = execute_command(args);
 
@@ -54,38 +53,16 @@ void loop(void) {
     }
 }
 
-char* read_line(void) {
-    size_t capacity = 1024;
-    char* line = malloc(capacity);
+char* read_line(char* prompt) {
+    char* line = readline(prompt);
     if (!line) {
-        fprintf(stderr, "shell: allocation error\n");
-        exit(1);
+        exit(0);
+    }
+    
+    if (strlen(line) > 0) {
+        add_history(line);
     }
 
-    int c;
-    size_t i = 0;
-
-    while ((c = getchar()) != EOF && c != '\n') {
-        if (i + 1 >= capacity) {
-            capacity *= 2;
-            char* temp = realloc(line, capacity);
-            if (!temp) {
-                free(line);
-                fprintf(stderr, "shell: allocation error\n");
-                exit(1);
-            }
-            line = temp;
-        }
-
-        line[i++] = c;
-    }
-
-    if (i == 0 && c == EOF) {
-        free(line);
-        exit(1);
-    }
-
-    line[i] = '\0';
     return line;
 }
 
