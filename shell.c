@@ -134,13 +134,15 @@ int run_command(char** args) {
 }
 
 int builtin_cd(char** args) {
-    if (!args[1]) {
-        fprintf(stderr, "shell: cd: expected argument\n");
-    } else {
-        if (chdir(args[1]) != 0) {
-            perror("shell");
-        }
+    char* dir = args[1];
+    if (!dir) {
+        dir = getenv("HOME");
     }
+
+    if (chdir(dir) != 0) {
+        perror("shell");
+    }
+
     return 1;
 }
 
