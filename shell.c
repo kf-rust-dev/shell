@@ -88,11 +88,73 @@ char** parse_line(char* line) {
         exit(1);
     }
 
-    const char* delim = " \t";
-    char* token = strtok(line, delim);
     size_t i = 0;
+    char* dst = line;
+    bool in_single = false;
+    bool in_double = false;
+    bool in_token = false;
+    bool escape = false;
+        
+    for (char* src = line; *src; src++) {
+        char c = *src;
 
-    while (token) {
+        if (escape) {
+            if (!in_token) {
+                tokens[i++] = dst;
+                in_token = true;
+            }
+            *dst++ = c;
+            escape = false;
+            continue;
+        }
+
+        switch (c) {
+            case '\\':
+                if (!in_single) {
+                    escape = true;
+                    continue;
+                }
+                break;
+            case '"':
+                if (!in_single) {
+                    if (!in_token) {
+                        tokens[i++] = dst;
+                        in_token = true;
+                    }
+                    in_double = !in_double;
+                    continue;
+                }
+                break;
+            case '\'':
+                if (!in_double) {
+                    if (!in_token) {
+                        tokens[i++] = dst;
+                        in_token = true;
+                    }
+                    in_single = !in_single;
+                    continue;
+                }
+                break;
+            case ' ':
+            case '\t':
+                if (!in_single && !in_double) {
+                    if (in_token) {
+                        *dst++ = '\0';
+                        in_token = false;
+                    }
+                    continue;
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (!in_token) {
+            tokens[i++] = dst;
+            in_token = true;
+        }
+        *dst++ = c;
+
         if (i + 1 >= capacity) {
             capacity *= 2;
             char** temp = realloc(tokens, capacity * sizeof *tokens);
@@ -103,9 +165,16 @@ char** parse_line(char* line) {
             }
             tokens = temp;
         }
+    }
 
-        tokens[i++] = token;
-        token = strtok(NULL, delim);
+    if (in_token) {
+        *dst++ = '\0';
+    }
+
+    if (in_single || in_double) {
+        fprintf(stderr, "shell: unmatched quote\n");
+        free(tokens);
+        return NULL;
     }
 
     tokens[i] = NULL;
@@ -113,7 +182,7 @@ char** parse_line(char* line) {
 }
 
 int execute_command(char** args) {
-    if (!args[0]) {
+    if (!args || !args[0]) {
         return 1;
     }
 
