@@ -18,9 +18,12 @@ int execute_command(char** args);
 int run_command(char** args);
 
 int builtin_cd(char** args);
+int builtin_pwd(char** args);
+int builtin_echo(char** args);
+int builtin_clear(char** args);
+int builtin_history(char** args);
 int builtin_help(char** args);
 int builtin_exit(char** args);
-int builtin_history(char** args);
 
 typedef struct {
     char* name;
@@ -29,9 +32,12 @@ typedef struct {
 
 builtin builtins[] = {
     {"cd", builtin_cd},
+    {"pwd", builtin_pwd},
+    {"echo", builtin_echo},
+    {"clear", builtin_clear},
+    {"history", builtin_history},
     {"help", builtin_help},
     {"exit", builtin_exit},
-    {"history", builtin_history}
 };
 
 int builtins_num() {
@@ -229,16 +235,30 @@ int builtin_cd(char** args) {
     return 1;
 }
 
-int builtin_help(char** args) {
-    printf("shell builtins:\n");
-    for (int i = 0; i < builtins_num(); i++) {
-        printf("  %s\n", builtins[i].name);
+int builtin_pwd(char** args) {
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("%s\n", cwd);
+    } else {
+        perror("shell");
     }
     return 1;
 }
 
-int builtin_exit(char** args) {
-    return 0;
+int builtin_echo(char** args) {
+    for (int i = 1; args[i]; i++) {
+        if (i > 1) {
+            printf(" ");
+        }
+        printf("%s", args[i]);
+    }
+    printf("\n");
+    return 1;
+}
+
+int builtin_clear(char** args) {
+    printf("\033[H\033[J");
+    return 1;
 }
 
 int builtin_history(char** args) {
@@ -249,4 +269,16 @@ int builtin_history(char** args) {
         }
     }
     return 1;
+}
+
+int builtin_help(char** args) {
+    printf("shell builtins:\n");
+    for (int i = 0; i < builtins_num(); i++) {
+        printf("  %s\n", builtins[i].name);
+    }
+    return 1;
+}
+
+int builtin_exit(char** args) {
+    return 0;
 }
